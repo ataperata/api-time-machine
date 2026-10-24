@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>api-time-machine</title>
+  <style>
+    :root {
+      --bg: #10140f;
+      --bg-2: #181e16;
+      --ink: #f3efe4;
+      --muted: #b7b09f;
+      --line: #2c3528;
+      --copper: #e0a15a;
+      --copper-2: #f0c48a;
+      --moss: #9cba7a;
+      --rose: #e07a6a;
+      --tide: #7eb8b0;
+      --card: #1c241b;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+      background:
+        radial-gradient(1200px 500px at 10% -10%, rgba(224, 161, 90, 0.16), transparent 55%),
+        radial-gradient(900px 400px at 100% 0%, rgba(126, 184, 176, 0.12), transparent 50%),
+        var(--bg);
+      color: var(--ink);
+    }
+    body::before {
+      content: "";
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(243, 239, 228, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(243, 239, 228, 0.035) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: linear-gradient(to bottom, #000, transparent 80%);
+    }
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; position: relative; }
+    header.top {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-end;
+      padding: 28px 0 18px;
+    }
+    .brand { display: flex; gap: 14px; align-items: center; }
+    .mark {
+      width: 46px; height: 46px; border-radius: 50%;
+      border: 1px solid var(--copper);
+      display: grid; place-items: center;
+      background: conic-gradient(from 20deg, var(--copper), transparent 40%, var(--tide), transparent 75%, var(--copper));
+      box-shadow: inset 0 0 0 6px var(--bg);
+    }
+    .mark span { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+    h1 { font-size: 28px; font-weight: 560; letter-spacing: -0.03em; margin: 0; }
+    h1 small { display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(28, 36, 27, 0.8);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .chip strong { color: var(--ink); font-weight: 600; }
+    nav.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+    nav.tabs button {
+      background: transparent;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      padding: 10px 12px;
+      margin-bottom: -1px;
+    }
+    nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--copper); }
+    main { padding: 18px 0 48px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+    label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+    input, select {
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 180px;
+    }
+    input:focus, select:focus, button:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+    table { width: 100%; border-collapse: collapse; background: rgba(28, 36, 27, 0.72); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+    th, td { text-align: left; padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: rgba(224, 161, 90, 0.06); }
+    tr.selected td { background: rgba(224, 161, 90, 0.1); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+    .method { display: inline-block; min-width: 58px; text-align: center; border-radius: 999px; padding: 2px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; letter-spacing: 0.06em; }
+    .GET { background: rgba(126, 184, 176, 0.18); color: var(--tide); }
+    .POST { background: rgba(224, 161, 90, 0.18); color: var(--copper-2); }
+    .PUT, .PATCH { background: rgba(156, 186, 122, 0.16); color: var(--moss); }
+    .DELETE { background: rgba(224, 122, 106, 0.18); color: var(--rose); }
+    .detail {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
+      padding: 14px;
+    }
+    pre {
+      margin: 0;
+      overflow: auto;
+      max-height: 420px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .timeline { display: grid; gap: 12px; }
+    .card {
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--copper);
+      background: rgba(28, 36, 27, 0.8);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .card.absent { border-left-color: var(--line); opacity: 0.7; }
+    .card h3 { margin: 0 0 6px; font-size: 16px; }
+    .meta { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    .fields { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11px; color: var(--muted); }
+    .pill.req { color: var(--ink); border-color: var(--copper); }
+    .change { margin-top: 8px; font-size: 14px; }
+    .change.breaking { color: var(--rose); }
+    .change.warning { color: var(--copper-2); }
+    .change.info { color: var(--tide); }
+    .counts { display: flex; gap: 8px; margin: 8px 0 12px; }
+    .count { padding: 8px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); min-width: 110px; }
+    .count b { display: block; font-size: 22px; }
+    .count span { color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .empty { padding: 28px; border: 1px dashed var(--line); border-radius: 14px; color: var(--muted); }
+    footer { color: var(--muted); font-size: 13px; padding-bottom: 28px; }
+    @media (max-width: 720px) {
+      header.top { flex-direction: column; align-items: flex-start; }
+      .chips { justify-content: flex-start; }
+      table { display: block; overflow-x: auto; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"><span></span></div>
+        <h1>api-time-machine<small>contract observatory</small></h1>
+      </div>
+      <div class="chips" id="chips"></div>
+    </header>
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-endpoints" aria-selected="true" aria-controls="panel-endpoints">Endpoints</button>
+      <button type="button" role="tab" id="tab-timeline" aria-selected="false" aria-controls="panel-timeline">Schema timeline</button>
+      <button type="button" role="tab" id="tab-diff" aria-selected="false" aria-controls="panel-diff">Breaking changes</button>
+    </nav>
+    <main>
+      <section class="panel active" id="panel-endpoints" role="tabpanel">
+        <div class="toolbar">
+          <label class="field">Version<select id="version"></select></label>
+          <label class="field">Filter<input id="filter" type="search" placeholder="path or method" /></label>
+        </div>
+        <div id="endpoint-table"></div>
+        <div id="endpoint-detail"></div>
+      </section>
+      <section class="panel" id="panel-timeline" role="tabpanel">
+        <div class="toolbar">
+          <label class="field">Operation<select id="operation"></select></label>
+        </div>
+        <div id="timeline" class="timeline"></div>
+      </section>
+      <section class="panel" id="panel-diff" role="tabpanel">
+        <div class="toolbar">
+          <label class="field">From<select id="diff-from"></select></label>
+          <label class="field">To<select id="diff-to"></select></label>
+        </div>
+        <div id="diff-report"></div>
+      </section>
+    </main>
+    <footer>Local dashboard. Specs are inferred from recorded traffic and are a hypothesis, not an authoritative publisher contract. Recordings are redacted at rest.</footer>
+  </div>
+  <script>
+    const state = { overview: null, operations: [], selected: null };
+
+    function h(tag, attrs, children) {
+      const node = document.createElement(tag);
+      for (const [key, value] of Object.entries(attrs || {})) {
+        if (key === "class") node.className = value;
+        else if (key.startsWith("on") && typeof value === "function") node.addEventListener(key.slice(2).toLowerCase(), value);
+        else if (value !== undefined && value !== null) node.setAttribute(key, String(value));
+      }
+      for (const child of children || []) node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+      return node;
+    }
+
+    async function getJson(url) {
+      const response = await fetch(url);
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || response.statusText);
+      return body;
+    }
+
+    function showTab(name) {
+      for (const id of ["endpoints", "timeline", "diff"]) {
+        document.getElementById("tab-" + id).setAttribute("aria-selected", id === name ? "true" : "false");
+        document.getElementById("panel-" + id).classList.toggle("active", id === name);
+      }
+    }
+
+    function fillVersions(select, versions, selected) {
+      select.replaceChildren();
+      if (!versions.length) {
+        select.append(h("option", { value: "" }, ["no versions yet"]));
+        return;
+      }
+      for (const version of versions) {
+        const label = version.id + " · " + version.operationCount + " ops";
+        const option = h("option", { value: version.id }, [label]);
+        if (version.id === selected) option.selected = true;
+        select.append(option);
+      }
+    }
+
+    function renderChips(overview) {
+      const latest = overview.latest;
+      const chips = [
+        ["exchanges", overview.exchanges],
+        ["sessions", overview.sessions],
+        ["versions", overview.versions.length],
+        ["watermark", overview.inferredThroughSeq],
+        ["latest ops", latest ? latest.operationCount : 0],
+      ];
+      document.getElementById("chips").replaceChildren(
+        ...chips.map(([label, value]) => h("span", { class: "chip" }, [label + " ", h("strong", {}, [value])]))
+      );
+    }
+
+    function renderEmpty(target, text) {
+      target.replaceChildren(h("div", { class: "empty" }, [text]));
+    }
+
+    async function renderEndpoints() {
+      const version = document.getElementById("version").value;
+      const host = document.getElementById("endpoint-table");
+      if (!version) {
+        renderEmpty(host, "No inferred specs yet. Record traffic, then run atm infer.");
+        return;
+      }
+      const rows = await getJson("/api/versions/" + encodeURIComponent(version) + "/operations");
+      const q = document.getElementById("filter").value.trim().toLowerCase();
+      const filtered = rows.filter((row) => !q || (row.method + " " + row.path).toLowerCase().includes(q));
+      if (!filtered.length) {
+        renderEmpty(host, "No endpoints match that filter.");
+        return;
+      }
+      const table = h("table", {}, [
+        h("thead", {}, [h("tr", {}, ["Method", "Path", "Samples", "Statuses", "Request", "Response"].map((label) => h("th", {}, [label])))]),
+        h("tbody", {}, filtered.map((row) => h("tr", {
+          class: "clickable" + (state.selected && state.selected.method === row.method && state.selected.path === row.path ? " selected" : ""),
+          onclick: () => showDetail(version, row),
+        }, [
+          h("td", {}, [h("span", { class: "method " + row.method }, [row.method])]),
+          h("td", { class: "mono" }, [row.path]),
+          h("td", { class: "mono" }, [row.samples]),
+          h("td", { class: "mono" }, [row.statuses.join(", ")]),
+          h("td", { class: "mono" }, [row.requestFields || "—"]),
+          h("td", { class: "mono" }, [(row.responseStatus ? row.responseStatus + " " : "") + (row.responseFields || "")]),
+        ]))),
+      ]);
+      host.replaceChildren(table);
+    }
+
+    async function showDetail(version, row) {
+      state.selected = row;
+      await renderEndpoints();
+      const params = new URLSearchParams({ method: row.method, path: row.path });
+      const detail = await getJson("/api/versions/" + encodeURIComponent(version) + "/operations/detail?" + params.toString());
+      if (!state.selected || state.selected.method !== row.method || state.selected.path !== row.path) return;
+      document.getElementById("endpoint-detail").replaceChildren(h("div", { class: "detail" }, [
+        h("div", { class: "meta" }, [row.method + " " + row.path]),
+        h("pre", {}, [JSON.stringify(detail.operation, null, 2)]),
+      ]));
+    }
+
+    async function renderTimeline() {
+      const select = document.getElementById("operation");
+      const host = document.getElementById("timeline");
+      const value = select.value;
+      if (!value) {
+        renderEmpty(host, "Infer at least one spec to see schema evolution.");
+        return;
+      }
+      const [method, ...rest] = value.split(" ");
+      const path = rest.join(" ");
+      const points = await getJson("/api/timeline?" + new URLSearchParams({ method, path }).toString());
+      if (!points.length) {
+        renderEmpty(host, "No versions recorded.");
+        return;
+      }
+      host.replaceChildren(...points.map((point) => {
+        const changes = point.changes.length
+          ? point.changes.map((change) => h("div", { class: "change " + change.level }, [change.level + " · " + change.message]))
+          : [h("div", { class: "meta" }, [point.present ? "No contract change for this operation." : "Not observed in this version."])];
+        return h("article", { class: "card" + (point.present ? "" : " absent") }, [
+          h("h3", {}, [point.versionId]),
+          h("div", { class: "meta" }, [point.createdAt + " · samples " + point.samples + (point.statuses.length ? " · " + point.statuses.join(", ") : "")]),
+          h("div", { class: "fields" }, point.responseFields.slice(0, 18).map((field) => h("span", { class: "pill" + (field.required ? " req" : "") }, [field.pointer + ":" + field.types]))),
+          ...changes,
+        ]);
+      }));
+    }
+
+    async function renderDiff() {
+      const host = document.getElementById("diff-report");
+      const from = document.getElementById("diff-from").value;
+      const to = document.getElementById("diff-to").value;
+      if (!from || !to) {
+        renderEmpty(host, "Need two inferred versions. Record a later window and run infer again.");
+        return;
+      }
+      const report = await getJson("/api/diff?" + new URLSearchParams({ from, to }).toString());
+      const summary = report.summary || { breaking: 0, warning: 0, info: 0 };
+      const groups = ["breaking", "warning", "info"].map((level) => {
+        const items = (report.changes || []).filter((change) => change.level === level);
+        if (!items.length) return null;
+        return h("section", {}, [
+          h("h2", {}, [level + " (" + items.length + ")"]),
+          ...items.map((change) => h("article", { class: "card" }, [
+            h("div", { class: "meta" }, [change.kind]),
+            h("h3", {}, [change.operation || "(document)"]),
+            h("div", { class: "change " + level }, [change.message]),
+            change.pointer ? h("div", { class: "mono" }, [change.pointer]) : "",
+          ])),
+        ]);
+      }).filter(Boolean);
+      host.replaceChildren(
+        h("div", { class: "counts" }, [
+          count(summary.breaking, "breaking"),
+          count(summary.warning, "warning"),
+          count(summary.info, "info"),
+        ]),
+        ...(groups.length ? groups : [h("div", { class: "empty" }, ["No contract changes between these versions."])]),
+      );
+    }
+
+    function count(value, label) {
+      return h("div", { class: "count" }, [h("b", {}, [value]), h("span", {}, [label])]);
+    }
+
+    async function boot() {
+      for (const id of ["endpoints", "timeline", "diff"]) {
+        document.getElementById("tab-" + id).addEventListener("click", () => showTab(id));
+      }
+      state.overview = await getJson("/api/overview");
+      renderChips(state.overview);
+      const versions = state.overview.versions;
+      const latest = versions[versions.length - 1];
+      const previous = versions[versions.length - 2] || latest;
+      fillVersions(document.getElementById("version"), versions, latest && latest.id);
+      fillVersions(document.getElementById("diff-from"), versions, previous && previous.id);
+      fillVersions(document.getElementById("diff-to"), versions, latest && latest.id);
+      document.getElementById("version").addEventListener("change", () => {
+        state.selected = null;
+        document.getElementById("endpoint-detail").replaceChildren();
+        renderEndpoints().catch(showError);
+      });
+      document.getElementById("filter").addEventListener("input", () => renderEndpoints().catch(showError));
+      document.getElementById("diff-from").addEventListener("change", () => renderDiff().catch(showError));
+      document.getElementById("diff-to").addEventListener("change", () => renderDiff().catch(showError));
+      const ops = await getJson("/api/operations");
+      const opSelect = document.getElementById("operation");
+      opSelect.replaceChildren();
+      if (!ops.length) opSelect.append(h("option", { value: "" }, ["no operations"]));
+      for (const op of ops) opSelect.append(h("option", { value: op.method + " " + op.path }, [op.method + " " + op.path]));
+      opSelect.addEventListener("change", () => renderTimeline().catch(showError));
+      await renderEndpoints();
+      await renderTimeline();
+      await renderDiff();
+    }
+
+    function showError(error) {
+      document.getElementById("endpoint-table").replaceChildren(h("div", { class: "empty" }, [String(error.message || error)]));
+    }
+
+    boot().catch(showError);
+  </script>
+</body>
+</html>

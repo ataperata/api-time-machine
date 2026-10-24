@@ -1,0 +1,11 @@
+{
+  "builtins": true,
+  "replacement": "[REDACTED]",
+  "headers": ["x-internal-key"],
+  "jsonKeys": ["internalNotes"],
+  "jsonKeyPatterns": ["^debug"],
+  "queryParams": ["access_token"],
+  "valuePatterns": [
+    { "name": "employee-id", "pattern": "\\bEMP\\d{6}\\b" }
+  ]
+}
