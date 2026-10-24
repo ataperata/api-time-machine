@@ -1,0 +1,40 @@
+{
+  "name": "api-time-machine",
+  "version": "0.1.0",
+  "description": "Record HTTP API traffic, infer versioned OpenAPI 3.1 specs, detect breaking changes, and replay a deterministic mock.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ata Perata <99473563+ataperata@users.noreply.github.com>",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "atm": "./dist/cli.js",
+    "api-time-machine": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run",
+    "demo": "npm run build && node examples/walkthrough.mjs",
+    "atm": "node dist/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
